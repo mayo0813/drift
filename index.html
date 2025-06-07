@@ -208,10 +208,10 @@
             
             // 속도를 매우 다양하게 설정 (매우 느림 ~ 보통)
             const speedVariations = [
-                { duration: Math.random() * 8000 + 20000, waveSpeed: Math.random() * 0.0008 + 0.0002 }, // 매우 느림 (20-28초)
-                { duration: Math.random() * 6000 + 15000, waveSpeed: Math.random() * 0.001 + 0.0005 },  // 느림 (15-21초)
-                { duration: Math.random() * 4000 + 12000, waveSpeed: Math.random() * 0.0015 + 0.0008 }, // 보통 (12-16초)
-                { duration: Math.random() * 3000 + 8000, waveSpeed: Math.random() * 0.002 + 0.001 }     // 상대적으로 빠름 (8-11초)
+                { duration: Math.random() * 8000 + 20000 }, // 매우 느림 (20-28초)
+                { duration: Math.random() * 6000 + 15000 },  // 느림 (15-21초)
+                { duration: Math.random() * 4000 + 12000 }, // 보통 (12-16초)
+                { duration: Math.random() * 3000 + 8000 }     // 상대적으로 빠름 (8-11초)
             ];
             
             const selectedSpeed = speedVariations[Math.floor(Math.random() * speedVariations.length)];
@@ -221,10 +221,12 @@
             
             textElement.startTime = Date.now();
             textElement.duration = selectedSpeed.duration;
-            textElement.waveSpeed = selectedSpeed.waveSpeed;
-            textElement.waveAmplitude = Math.random() * 60 + 30; // 물결 크기도 조금 줄임
             textElement.direction = Math.floor(Math.random() * 4);
             textElement.isAccumulated = shouldAccumulate;
+            
+            // 유영을 위한 무작위 곡선 포인트들 생성
+            textElement.curvePoints = [];
+            const numPoints = 8 + Math.floor(Math.random() * 6); // 8-13개 포인트
             
             // 시작과 끝 위치 설정
             const screenWidth = window.innerWidth;
@@ -234,36 +236,56 @@
                 // 축적되는 텍스트는 화면 중앙 근처에서 천천히 움직임
                 textElement.startX = Math.random() * (screenWidth * 0.6) + screenWidth * 0.2;
                 textElement.startY = Math.random() * (screenHeight * 0.6) + screenHeight * 0.2;
-                textElement.endX = textElement.startX + (Math.random() - 0.5) * 200; // 작은 움직임
-                textElement.endY = textElement.startY + (Math.random() - 0.5) * 200;
-                textElement.flowDirection = 'accumulated';
-                textElement.waveAmplitude *= 0.5; // 축적 텍스트는 물결 더 작게
+                textElement.endX = textElement.startX + (Math.random() - 0.5) * 150;
+                textElement.endY = textElement.startY + (Math.random() - 0.5) * 150;
+                
+                // 축적된 텍스트용 작은 곡선 포인트들
+                for (let i = 0; i < 4; i++) {
+                    textElement.curvePoints.push({
+                        x: textElement.startX + (Math.random() - 0.5) * 100,
+                        y: textElement.startY + (Math.random() - 0.5) * 100
+                    });
+                }
             } else {
                 switch(textElement.direction) {
-                    case 0: // 왼쪽에서 오른쪽 (강물처럼)
+                    case 0: // 왼쪽에서 오른쪽
                         textElement.startX = -200;
                         textElement.endX = screenWidth + 200;
-                        textElement.startY = textElement.endY = Math.random() * (screenHeight - 100) + 50;
-                        textElement.flowDirection = 'horizontal';
+                        textElement.startY = Math.random() * (screenHeight - 100) + 50;
+                        textElement.endY = Math.random() * (screenHeight - 100) + 50;
                         break;
                     case 1: // 오른쪽에서 왼쪽
                         textElement.startX = screenWidth + 200;
                         textElement.endX = -200;
-                        textElement.startY = textElement.endY = Math.random() * (screenHeight - 100) + 50;
-                        textElement.flowDirection = 'horizontal';
+                        textElement.startY = Math.random() * (screenHeight - 100) + 50;
+                        textElement.endY = Math.random() * (screenHeight - 100) + 50;
                         break;
-                    case 2: // 위에서 아래 (폭포처럼)
+                    case 2: // 위에서 아래
                         textElement.startY = -50;
                         textElement.endY = screenHeight + 50;
-                        textElement.startX = textElement.endX = Math.random() * (screenWidth - 200) + 100;
-                        textElement.flowDirection = 'vertical';
+                        textElement.startX = Math.random() * (screenWidth - 200) + 100;
+                        textElement.endX = Math.random() * (screenWidth - 200) + 100;
                         break;
                     case 3: // 아래에서 위
                         textElement.startY = screenHeight + 50;
                         textElement.endY = -50;
-                        textElement.startX = textElement.endX = Math.random() * (screenWidth - 200) + 100;
-                        textElement.flowDirection = 'vertical';
+                        textElement.startX = Math.random() * (screenWidth - 200) + 100;
+                        textElement.endX = Math.random() * (screenWidth - 200) + 100;
                         break;
+                }
+                
+                // 유영을 위한 중간 곡선 포인트들 생성
+                for (let i = 0; i < numPoints; i++) {
+                    const progress = i / (numPoints - 1);
+                    const baseX = textElement.startX + (textElement.endX - textElement.startX) * progress;
+                    const baseY = textElement.startY + (textElement.endY - textElement.startY) * progress;
+                    
+                    // 각 포인트에 무작위 편차 추가
+                    const deviation = 80 + Math.random() * 60;
+                    textElement.curvePoints.push({
+                        x: baseX + (Math.random() - 0.5) * deviation,
+                        y: baseY + (Math.random() - 0.5) * deviation
+                    });
                 }
             }
             
@@ -278,11 +300,11 @@
                 accumulatedTexts.push(textElement);
             }
             
-            // 물 흐르듯 애니메이션 시작
+            // 유영 애니메이션 시작
             animateFloatingText(textElement);
         }
 
-        // 물 흐르듯 애니메이션 함수
+        // 베지어 곡선을 따라 유영하는 애니메이션 함수
         function animateFloatingText(textElement) {
             function updatePosition() {
                 const now = Date.now();
@@ -299,49 +321,24 @@
                     }, 3000);
                     return;
                 } else if (textElement.isAccumulated && progress >= 1) {
-                    // 축적된 텍스트는 최종 위치에서 머물기
-                    const finalX = textElement.endX;
-                    const finalY = textElement.endY;
+                    // 축적된 텍스트는 최종 위치에서 미묘하게 떠다니기
+                    const finalPoint = textElement.curvePoints[textElement.curvePoints.length - 1];
+                    const breatheX = (Math.random() - 0.5) * 3; // 매우 작은 움직임
+                    const breatheY = (Math.random() - 0.5) * 3;
                     
-                    // 미묘한 호흡하는 듯한 움직임만 유지
-                    const breathe = Math.sin(elapsed * 0.001) * 5;
-                    textElement.style.left = (finalX + breathe) + 'px';
-                    textElement.style.top = (finalY + breathe * 0.5) + 'px';
-                    textElement.style.opacity = '0.6'; // 조금 투명하게
+                    textElement.style.left = (finalPoint.x + breatheX) + 'px';
+                    textElement.style.top = (finalPoint.y + breatheY) + 'px';
+                    textElement.style.opacity = '0.6';
                     
                     requestAnimationFrame(updatePosition);
                     return;
                 }
                 
-                // 기본 직선 이동
-                const currentX = textElement.startX + (textElement.endX - textElement.startX) * progress;
-                const currentY = textElement.startY + (textElement.endY - textElement.startY) * progress;
+                // 곡선을 따라 이동 (카트뮬-롬 스플라인 보간법)
+                const position = getPositionOnCurve(textElement.curvePoints, progress);
                 
-                // 물결 효과 추가
-                let waveX = 0;
-                let waveY = 0;
-                
-                const time = elapsed * textElement.waveSpeed;
-                
-                if (textElement.flowDirection === 'horizontal') {
-                    // 가로 움직임일 때 세로로 물결
-                    waveY = Math.sin(time + currentX * 0.008) * textElement.waveAmplitude * (1 - Math.abs(progress - 0.5) * 2);
-                    // 미묘한 가로 흔들림도 추가
-                    waveX = Math.sin(time * 0.7 + currentY * 0.006) * (textElement.waveAmplitude * 0.3);
-                } else if (textElement.flowDirection === 'vertical') {
-                    // 세로 움직임일 때 가로로 물결
-                    waveX = Math.sin(time + currentY * 0.008) * textElement.waveAmplitude * (1 - Math.abs(progress - 0.5) * 2);
-                    // 미묘한 세로 흔들림도 추가
-                    waveY = Math.sin(time * 0.6 + currentX * 0.008) * (textElement.waveAmplitude * 0.2);
-                } else if (textElement.flowDirection === 'accumulated') {
-                    // 축적된 텍스트는 원형 움직임
-                    waveX = Math.sin(time) * textElement.waveAmplitude * 0.3;
-                    waveY = Math.cos(time * 0.8) * textElement.waveAmplitude * 0.3;
-                }
-                
-                // 최종 위치 적용
-                textElement.style.left = (currentX + waveX) + 'px';
-                textElement.style.top = (currentY + waveY) + 'px';
+                textElement.style.left = position.x + 'px';
+                textElement.style.top = position.y + 'px';
                 
                 // 페이드아웃 효과 (일반 텍스트만, 마지막 20%에서)
                 if (!textElement.isAccumulated && progress > 0.8) {
@@ -353,6 +350,50 @@
             }
             
             updatePosition();
+        }
+
+        // 곡선상의 위치를 계산하는 함수 (부드러운 보간법)
+        function getPositionOnCurve(points, t) {
+            if (points.length < 2) {
+                return points[0] || { x: 0, y: 0 };
+            }
+            
+            if (t <= 0) return points[0];
+            if (t >= 1) return points[points.length - 1];
+            
+            // 전체 곡선을 따라 이동
+            const scaledT = t * (points.length - 1);
+            const index = Math.floor(scaledT);
+            const localT = scaledT - index;
+            
+            if (index >= points.length - 1) {
+                return points[points.length - 1];
+            }
+            
+            const p0 = points[Math.max(0, index - 1)];
+            const p1 = points[index];
+            const p2 = points[index + 1];
+            const p3 = points[Math.min(points.length - 1, index + 2)];
+            
+            // 카트뮬-롬 스플라인 보간법 (부드러운 곡선)
+            const t2 = localT * localT;
+            const t3 = t2 * localT;
+            
+            const x = 0.5 * (
+                (2 * p1.x) +
+                (-p0.x + p2.x) * localT +
+                (2 * p0.x - 5 * p1.x + 4 * p2.x - p3.x) * t2 +
+                (-p0.x + 3 * p1.x - 3 * p2.x + p3.x) * t3
+            );
+            
+            const y = 0.5 * (
+                (2 * p1.y) +
+                (-p0.y + p2.y) * localT +
+                (2 * p0.y - 5 * p1.y + 4 * p2.y - p3.y) * t2 +
+                (-p0.y + 3 * p1.y - 3 * p2.y + p3.y) * t3
+            );
+            
+            return { x, y };
         }
 
         // 주기적으로 다른 사람들 생성 (더 천천히)
